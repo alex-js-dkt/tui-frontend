@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name:  t-ui
+  namespace: frontend
+  labels:
+    app:  t-ui-fe
+spec:
+  type: ClusterIP
+  ports:
+    - name: dkt-bo
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app:  t-ui-fe

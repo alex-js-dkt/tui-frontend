@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dkt-ingress
+  namespace:  frontend
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 50M
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+    - hosts:
+        - t-ui.dev.onkakao.net
+      secretName: onkakao-net
+  rules:
+    - host: t-ui.dev.onkakao.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name:  t-ui
+                port:
+                  number: 3000
