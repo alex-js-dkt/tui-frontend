@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const [liveTime, setLiveTime] = useState<number>(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   // const baseUrl = "https://t-ui-api.dev.onkakao.net"
-  const baseUrl = "http://localhost:3000"
+  const baseUrl = "http://34.173.50.243"
    useEffect(() => {
     if (loading) {
       intervalRef.current = setInterval(() => {
