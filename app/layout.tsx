@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Demo UI2AI",
+  title: "Demo T-ui",
   description: "Figma JSON to HTML",
 };
 

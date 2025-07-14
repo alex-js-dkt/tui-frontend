@@ -149,7 +149,7 @@ export default function DashboardPage() {
             <CardTitle>Step 2. Gemini로 HTML/CSS 생성</CardTitle>
           </CardHeader>
           <CardContent>
-            <Label className="block mb-1">1분에서 2분가량 소요되며, 완료 시 자동 다운로드 됩니다.</Label>
+            <Label className="block mb-1">1분이상 소요되며, 완료 시 자동 다운로드 됩니다.</Label>
             {/* <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="예: 시멘틱 태그, Tailwind 반응형 구조" className="mb-4" /> */}
             <Button className="mt-4" onClick={handleGenerateHtmlCss} disabled={loading || !jsonPath}>
               {loading ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : "⚙️ 생성 시작"}
