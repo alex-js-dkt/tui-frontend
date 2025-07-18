@@ -61,25 +61,25 @@ export default function DashboardPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ filename: filename, device: device }),
-      }).catch(err => {
-        console.log(err)
-        throw new Error(`❌ 서버 응답 오류: ${err}`);
       })
-      // 
-      if (!res.status) {
-        throw new Error(`❌ 서버 응답 오류: ${res.statusText}`);
-      }
-      const data = await res.json();
-      // setHtmlUrl(`${baseUrl}/web/${data.path}`);
-      if(data.path === undefined){
-        throw new Error(`❌ 서버 응답 오류`);
-      }
-      setPreview({
-            visible: true,
-            isError: false,
-            src: `${baseUrl}/web/${data.path}`,
-            msg: '',
-        });
+      // const data = await res.json();
+      // // setHtmlUrl(`${baseUrl}/web/${data.path}`);
+      // if(data.path === undefined){
+      //   throw new Error(`❌ 서버 응답 오류`);
+      // }
+      // setPreview({
+      //       visible: true,
+      //       isError: false,
+      //       src: `${baseUrl}/web/${data.path}`,
+      //       msg: '',
+      //   });
+      const blob = await res.blob(); // ZIP 파일 받아오기
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `html-${Date.now()}.zip`; // 다운로드될 파일명
+      a.click();
       toast.success('✅ HTML/CSS 생성 완료');
     } catch (error: unknown) {
       const err = error as Error;
