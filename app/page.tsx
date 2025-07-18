@@ -34,8 +34,8 @@ export default function DashboardPage() {
     //   return;
     // }
     setLoading(true);
-    const baseUrl = "http://34.173.50.243"
-    // const baseUrl = "http://127.0.0.1:3000"
+    // const baseUrl = "http://34.173.50.243"
+    const baseUrl = "http://127.0.0.1:3000"
     try {
       const figmaApiRes = await fetch(`${baseUrl}/api/figma/exportJson?url=${figmaUrl}`, {
         method: "GET",
@@ -82,7 +82,6 @@ export default function DashboardPage() {
         });
       toast.success('✅ HTML/CSS 생성 완료');
     } catch (error: unknown) {
-      console.log("###", error)
       const err = error as Error;
       setPreview({
         ...preview,
@@ -155,8 +154,7 @@ export default function DashboardPage() {
 
             <div className="flex flex-col gap-3">
               {preview.src && <a href={preview.src} target="_blank" rel="noopener" className="border px-4 py-2 rounded text-blue-600">HTML Link</a>}
-              {/* {cssUrl && <a href={cssUrl} target="_blank" rel="noopener" className="border px-4 py-2 rounded text-blue-600">CSS Link</a>}
-    {zipUrl && <a href={zipUrl} download className="border px-4 py-2 rounded text-blue-600">ZIP Download</a>} */}
+             
             </div>
             <div className="border w-full aspect-[4/3] rounded overflow-hidden">
               {preview.src ? (
