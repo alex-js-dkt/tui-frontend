@@ -34,8 +34,8 @@ export default function DashboardPage() {
     //   return;
     // }
     setLoading(true);
-    // const baseUrl = "http://34.173.50.243"
-    const baseUrl = "http://127.0.0.1:3000"
+    const baseUrl = "http://34.173.50.243"
+    // const baseUrl = "http://127.0.0.1:3000"
     try {
       const figmaApiRes = await fetch(`${baseUrl}/api/figma/exportJson?url=${figmaUrl}`, {
         method: "GET",
