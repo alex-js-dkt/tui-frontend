@@ -3,181 +3,208 @@
 'use client';
 
 import { useState, useRef, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Loader2, CheckCircle, CloudDownload, Download } from "lucide-react";
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
+import { error } from "console";
 
 export default function DashboardPage() {
-  const [step, setStep] = useState(2);
-  const [figmaUrl, setFigmaUrl] = useState("");
-  const [jsonUrl, setJsonUrl] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [status, setStatus] = useState("");
-  const [zipFile, setZipFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [fileInputMode, setFileInputMode] = useState<'upload' | 'path'>('upload');
+  const [device, setDevice] = useState<'pc' | 'mobile' | 'rw'>('pc');
+  const [figmaUrl, setFigmaUrl] = useState('');
   const [jsonPath, setJsonPath] = useState("");
-  const [jsonPathInput, setJsonPathInput] = useState("");
-  const [elapsedTime, setElapsedTime] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [liveTime, setLiveTime] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  // const baseUrl = "https://t-ui-api.dev.onkakao.net"
-  const baseUrl = "http://34.173.50.243"
-   useEffect(() => {
-    if (loading) {
-      intervalRef.current = setInterval(() => {
-        setLiveTime((t) => t + 1);
-      }, 1000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      setLiveTime(0);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [loading]);
+  const [loading, setLoading] = useState(false);
+  const [htmlUrl, setHtmlUrl] = useState('');
+  const [preview, setPreview] = useState<{ visible: boolean; src: string; isError: boolean, msg: string }>({
+        visible: false,
+        src: '',
+        isError: false,
+        msg: '',
+    });
 
-  const handleExtractJson = async () => {
+  const handleGenerate = async () => {
+
+    if (!figmaUrl.trim()) {
+      toast.warning('❗ Figma URL을 입력해주세요.');
+      return;
+    }
+    // if (!minWidth.trim() || isNaN(Number(minWidth)) || Number(minWidth) <= 0) {
+    //   toast.warning('❗ 최소 해상도를 올바르게 입력해주세요.');
+    //   return;
+    // }
     setLoading(true);
-    setStatus("Figma JSON 추출 중...");
+    // const baseUrl = "http://34.173.50.243"
+    const baseUrl = "http://127.0.0.1:3000"
     try {
-      const res = await fetch(`${baseUrl}/api/figma/exportJson?url=${figmaUrl}`, {
+      const figmaApiRes = await fetch(`${baseUrl}/api/figma/exportJson?url=${figmaUrl}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       })
-      console.log(res)
-      if (!res.ok) {
-        throw new Error(`❌ 서버 응답 오류: ${res.status}`);
+      console.log(figmaApiRes)
+      if (!figmaApiRes.ok) {
+        throw new Error(`❌ 서버 응답 오류: ${figmaApiRes.status}`);
       }
-      const data = await res.json();
-      // const blob = await res.blob();
-      setStatus("✔️ JSON 추출 완료");
-      setStep(2);
 
-      // 👇 JSON 파일을 로컬에 다운로드 경로 추가
-    
-      setJsonPath(`${data.jsonPath}`);
-    } catch (err) {
-      setStatus("❌ 실패: " + err);
-    }
-    setLoading(false);
-  };
+      const figmaData = await figmaApiRes.json();
+      const filename = figmaData?.jsonPath;
 
-  const handleGenerateHtmlCss = async () => {
-    setElapsedTime(null);
-    setLoading(true);
-    const start = performance.now();
-    setStatus("Gemini 호출 중...");
-    try {
-
+      if (!filename) {
+        toast.error('❌ figma.json 파일 생성 실패');
+        return;
+      }
+       setJsonPath(`filename`);
+      console.log(device, filename);
       const res = await fetch(`${baseUrl}/api/gemini/generate`, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ filename: jsonPath }),
+        body: JSON.stringify({ filename: filename, device: device }),
+      }).catch(err => {
+        console.log(err)
+        throw new Error(`❌ 서버 응답 오류: ${err}`);
       })
       // 
       if (!res.status) {
-        
         throw new Error(`❌ 서버 응답 오류: ${res.statusText}`);
       }
-      const end = performance.now();
-      const seconds = ((end - start) / 1000).toFixed(2);
-      setElapsedTime(Number(seconds));
-      const blob = await res.blob(); // ZIP 파일 받아오기
-      const downloadUrl = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = `html-${Date.now()}.zip`; // 다운로드될 파일명
-      a.click();
-
-      window.URL.revokeObjectURL(downloadUrl); // 메모리 해제
-      const file = new File([blob], `html-${Date.now()}.zip`, { type: "application/zip" });
-      setZipFile(file);
-      setStatus("✔️ HTML/CSS 생성 완료");
-      setStep(3);
-    } catch (err) {
-      setStatus("❌ 실패: " + err);
+      const data = await res.json();
+      // setHtmlUrl(`${baseUrl}/web/${data.path}`);
+      if(data.path === undefined){
+        throw new Error(`❌ 서버 응답 오류`);
+      }
+      setPreview({
+            visible: true,
+            isError: false,
+            src: `${baseUrl}/web/${data.path}`,
+            msg: '',
+        });
+      toast.success('✅ HTML/CSS 생성 완료');
+    } catch (error: unknown) {
+      console.log("###", error)
+      const err = error as Error;
+      setPreview({
+        ...preview,
+          isError: true,
+          msg: err.message || '알 수 없는 오류',
+          visible: false
+      });
+      toast.error('에러 발생: ' + (err.message || '알 수 없는 오류'));
     }
     setLoading(false);
+
   };
 
-  const handleZipDownload = () => {
-    if (!zipFile) {
-      alert("파일을 찾을 수 없습니다.");
-      return;
-    }
+    // const handleMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>, url: string) => {
+    //     const fullUrl = `${url}`;
+    //     setPreview({
+    //         visible: true,
+    //         src: fullUrl,
+    //         x: e.pageX + 20,
+    //         y: e.pageY - 50,
+    //     });
+    // };
 
-    const url = URL.createObjectURL(zipFile);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = zipFile.name || "result.zip";
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+    // const handleMouseLeave = () => {
+    //     setPreview({ ...preview, visible: false });
+    // };
 
   return (
-    <main className="max-w-4xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6">📦 t-ui</h1>
+    <div className="min-h-screen px-6 py-10 relative">
+      <h1 className="text-xl font-bold mb-6">T UI</h1>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Step 1. Figma 링크로 JSON 추출</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Label>Figma 링크</Label>
-          <Input value={figmaUrl} onChange={(e) => setFigmaUrl(e.target.value)} placeholder="https://www.figma.com/..." />
-          <div className="flex gap-3 items-center mt-4">
-            {!jsonPath ? <Button onClick={handleExtractJson} disabled={loading || !figmaUrl}>
-              {loading ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : "🔍 추출 시작"}
-            </Button>: ''}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-4 mb-4">
+        <RadioGroup defaultValue="pc" onValueChange={(v) => setDevice(v as any)} className="flex gap-4">
+          <RadioGroupItem value="pc" id="pc" /> <label htmlFor="pc">PC</label>
+          <RadioGroupItem value="mobile" id="mobile" /> <label htmlFor="mobile">Mobile</label>
+          <RadioGroupItem value="rw" id="rw" /> <label htmlFor="rw">RW</label>
+        </RadioGroup>
+        {/* <div className="flex items-center gap-2">
+          <label className="text-sm">최소 해상도</label>
+          <Input type="number" value={minWidth} onChange={(e) => setMinWidth(e.target.value)} className="w-32" />
+          <span>px</span>
+        </div> */}
+      </div>
 
-      {step >= 2 && (
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Step 2. Gemini로 HTML/CSS 생성</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Label className="block mb-1">1분이상 소요되며, 완료 시 자동 다운로드 됩니다.</Label>
-            {/* <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="예: 시멘틱 태그, Tailwind 반응형 구조" className="mb-4" /> */}
-            <Button className="mt-4" onClick={handleGenerateHtmlCss} disabled={loading || !jsonPath}>
-              {loading ? <Loader2 className="animate-spin mr-2 w-4 h-4" /> : "⚙️ 생성 시작"}
-            </Button>
-            <div className="text-sm text-gray-500 mt-2">
-              {loading && <span>⏱ 진행 중: {liveTime}초</span>}
-              {elapsedTime && !loading && <span>✅ 완료: {elapsedTime}초</span>}
+      <div className="flex gap-2 mb-4">
+        <Input
+          placeholder="https://figma.com/your-design-url"
+          value={figmaUrl}
+          onChange={(e) => setFigmaUrl(e.target.value)}
+        />
+        <Button onClick={handleGenerate}>생성</Button>
+      </div>
+
+      {loading && (
+        <div className="absolute inset-0 bg-black/30 flex items-center justify-center z-50">
+          <Loader2 className="w-8 h-8 animate-spin text-white" />
+        </div>
+      )}
+      { preview.visible && (
+      <>
+      {/* <a
+          href={`${preview.src}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 visited:text-purple-700 hover:underline break-all"
+          onMouseEnter={(e) => handleMouseEnter(e, preview.src)}
+          onMouseLeave={handleMouseLeave}
+        >{preview.src} </a> */}
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+
+            <div className="flex flex-col gap-3">
+              {preview.src && <a href={preview.src} target="_blank" rel="noopener" className="border px-4 py-2 rounded text-blue-600">HTML Link</a>}
+              {/* {cssUrl && <a href={cssUrl} target="_blank" rel="noopener" className="border px-4 py-2 rounded text-blue-600">CSS Link</a>}
+    {zipUrl && <a href={zipUrl} download className="border px-4 py-2 rounded text-blue-600">ZIP Download</a>} */}
             </div>
-          
-          </CardContent>
-        </Card>
+            <div className="border w-full aspect-[4/3] rounded overflow-hidden">
+              {preview.src ? (
+                <iframe src={preview.src} className="w-full h-full" title="preview" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-400">미리보기 없음</div>
+              )}
+            </div>
+          </div></>
       )}
-
-      {status && (
-        <div className="flex items-center gap-2 p-4 bg-muted rounded-md">
-          {loading ? <Loader2 className="animate-spin w-4 h-4" /> : <CheckCircle className="text-green-500 w-5 h-5" />}
-          <span>{status}</span>
-        </div>
-      )}
-
-      {step === 3 && zipFile && (
-        <div className="mt-6 flex items-center gap-3">
-          <CloudDownload className="w-6 h-6" />
-          <a onClick={handleZipDownload} className="text-blue-600 underline" download>
-            ZIP 다운로드
-          </a>
-        </div>
-      )}
-    </main>
+      {/* <div className="grid grid-cols-1 gap-6 mt-8">
+        {jobs.map((job) => (
+          <div key={job.jobId} className="border rounded p-4">
+            <div className="mb-2 text-sm font-medium">Job ID: {job.jobId}</div>
+            {job.status === 'processing' ? (
+              <div className="text-yellow-600">⏳ 생성 중...</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {job.htmlUrl && (
+                  <a href={job.htmlUrl} target="_blank" className="text-blue-600 underline link_preview">HTML Link</a>
+                )}
+                {job.cssUrl && <a href={job.cssUrl} target="_blank" className="text-blue-600 underline">CSS Link</a>}
+                {job.zipUrl && <a href={job.zipUrl} download className="text-blue-600 underline">ZIP Download</a>}
+              </div>
+            )}
+          </div>
+        ))}
+      </div> */}
+      {/* {preview.visible && (
+        <iframe
+            src={preview.src}
+            style={{
+                position: 'absolute',
+                top: `${preview.y}px`,
+                left: `${preview.x}px`,
+                width: '504px', // 1440 * 0.35
+                height: '525px', // 1500 * 0.35
+                border: '1px solid #ccc',
+                boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
+                backgroundColor: '#fff',
+                zIndex: 50,
+                transformOrigin: 'top left',
+            }}
+        />
+      )} */}
+      { preview.isError && (<div className="flex flex-col gap-3">
+              <p className="border px-4 py-2 rounded text-red-600">AI 생성에 실패했습니다. (네트워크 또는 입출력 토큰을 확인)</p>
+            </div>)}
+    </div>
   );
 }
